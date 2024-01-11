@@ -1,0 +1,122 @@
+var grossSalary = document.querySelector('.grossSalaryInput');
+var bonusAmt = document.querySelector('.bonusAmtInput');
+var extraAmt = document.querySelector('.extraAmtInput');
+
+var input80C = document.querySelector('.input80C');
+var input80D = document.querySelector('.input80D');
+var otherDeductions = document.querySelector('.otherDeductions');
+
+var hra = document.querySelector('.hra');
+var lta = document.querySelector('.lta');
+var otherExemption = document.querySelector('.otherExemption');
+
+var standardDeduction = 50000;
+var FinalHRA = 0;
+
+grossSalary.addEventListener('input', calculateTax);
+bonusAmt.addEventListener('input', calculateTax);
+extraAmt.addEventListener('input', calculateTax);
+
+input80C.addEventListener('input', calculateTax);
+input80D.addEventListener('input', calculateTax);
+otherDeductions.addEventListener('input', calculateTax);
+
+hra.addEventListener('input', calculateTax);
+lta.addEventListener('input', calculateTax);
+otherExemption.addEventListener('input', calculateTax);
+
+
+function calculateTax() {
+    var totalIncome = Number(grossSalary.value) + Number(bonusAmt.value) + Number(extraAmt.value);
+    var totalDeductions = Number(input80C.value) + Number(input80D.value) + Number(otherDeductions.value);
+    var totalExemption = Number(hra.value) + Number(lta.value) + Number(otherExemption.value);
+                
+    if(totalIncome > 500000) {        
+        // 1. Remove all Exemption from total Income
+        var taxableIncome = totalIncome  - totalExemption;
+        // 2. Remove all deductions from taxable Income
+        var netTaxableIncome = taxableIncome - totalDeductions - standardDeduction;
+        netTaxableIncome > 0 ? netTaxableIncome : 0;        
+
+        // OLD Tax Regime 5% (Rs. 2.5L to Rs. 5L)
+        // OLD Tax Regime 20% (Rs. 5L to Rs. 10L)
+        // OLD Tax Regime 30% (>Rs. 10L)
+             
+        // calculate 5% slab       
+        var slab5 = netTaxableIncome > 250000 ? netTaxableIncome > 500000 ? (500000-250000)*5/100 : (netTaxableIncome-250000)*5/100 : 0;
+        // calculate 20% slab
+        var slab20 = netTaxableIncome > 500000 ? netTaxableIncome > 1000000 ? (1000000-500000)*20/100 : (netTaxableIncome-500000)*20/100 : 0; 
+        // calculate 30% slab
+        var slab30 = netTaxableIncome > 1000000 ? (netTaxableIncome-1000000)*30/100 : 0;   
+        // calcculate Tax Rebate
+        var taxRebate = slab20 > 0 ? 0 : slab5;
+        // calculate Surcharge 10%
+        var surcharge10 = netTaxableIncome > 5000000 ? netTaxableIncome > 10000000 ? (10000000-5000000)*10/100 : (netTaxableIncome - 5000000)*10/100 : 0;
+        // calculate Surcharge 15%
+        var surcharge15 = netTaxableIncome > 10000000 ? netTaxableIncome > 20000000 ? (20000000-10000000)*10/100 : (netTaxableIncome - 10000000)*15/100 : 0;
+        // calculate Cess 4%
+        var cess = ((slab5 + slab20 + slab30 + surcharge10 + surcharge15) - taxRebate)*4/100;        
+        // calculate total income Tax
+        var incomTax = ((slab5 + slab20 + slab30 + surcharge10 + surcharge15 + cess) - taxRebate).toFixed();
+        
+        document.querySelector('.finalAmt span').textContent = incomTax > 0 ? incomTax : 0;
+    } else {
+        document.querySelector('.finalAmt span').textContent = 0;
+    } 
+    allDetail = {
+        grossSalary: grossSalary.value,
+        bonus: bonusAmt.value,
+        extraAmt: extraAmt.value,
+        totalIncome: totalIncome,
+        HRA: hra.value,
+        LTA: lta.value,
+        otherExemption: otherExemption.value,
+        totalExemption: totalExemption,
+        section80c: input80C.value,
+        section80d: input80D.value,
+        otherDeductions: otherDeductions.value,
+        totalDeductions: totalDeductions,
+        taxableIncome: taxableIncome,
+        netTaxableIncome: netTaxableIncome,
+        slab5: slab5,
+        slab20: slab20,
+        slab30: slab30,
+        surcharge10: surcharge10,
+        surcharge15: surcharge15,
+        cess:cess,
+        incomTax: incomTax
+    }
+    console.log(allDetail);
+    return allDetail;
+}
+
+var basicSalary = document.querySelector('#basicSalary');
+var totalHra = document.querySelector('#totalHra');
+var rentpaid = document.querySelector('#rentPaid');
+var isLiveMetroCity = document.querySelector('#isLiveMetroCity');
+
+function calculateHra(basicSalary, totalHra, rentpaid, isLiveMetroCity) {    
+    hraCal2 = rentpaid - basicSalary*10/100;
+    hraCal3 = isLiveMetroCity === true ? basicSalary*50/100 : basicSalary*40/100;    
+    FinalHRA = Math.min(totalHra, hraCal2, hraCal3).toFixed();    
+    document.querySelector('.hraAmt').textContent = FinalHRA;
+    document.querySelector('.hracalTxt').style.display = "block";
+}
+
+document.querySelector('.hraCalcBtn').addEventListener('click', function() {
+    calculateHra(basicSalary.value, totalHra.value, rentpaid.value, isLiveMetroCity.checked);
+});
+
+document.querySelector('.hraModal').addEventListener('click', () => {
+    document.querySelector('.hraPopup').style.display = 'flex';
+})
+document.querySelector('.closeIcon').addEventListener('click', () => {
+    basicSalary.value = '';
+    totalHra.value = '';
+    rentpaid.value = '';
+    isLiveMetroCity.checked = false;
+    if(FinalHRA) {
+        hra.value = FinalHRA;
+    }
+    document.querySelector('.hraPopup').style.display = 'none';
+})
